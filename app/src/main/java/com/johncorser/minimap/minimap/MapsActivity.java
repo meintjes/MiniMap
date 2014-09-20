@@ -4,10 +4,12 @@ import android.location.Location;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 
+import com.google.android.gms.maps.CameraUpdate;
+import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.MarkerOptions;
 
 public class MapsActivity extends FragmentActivity {
 
@@ -57,8 +59,41 @@ public class MapsActivity extends FragmentActivity {
                     @Override
                     public void onMyLocationChange(Location arg0) {
                         // TODO Auto-generated method stub
+                        // Getting latitude of the current location
 
-                        mMap.addMarker(new MarkerOptions().position(new LatLng(arg0.getLatitude(), arg0.getLongitude())).title("It's Me!"));
+                        double latitude = arg0.getLatitude();
+
+
+                        // Getting longitude of the current location
+
+                        double longitude = arg0.getLongitude();
+
+
+                        float speed = arg0.getSpeed();
+                        // Creating a LatLng object for the current location
+
+                        LatLng latLng = new LatLng(latitude, longitude);
+
+
+                        //llamarservicio(latitude,longitude,speed);
+
+                        // Showing the current location in Google Map
+
+                        // googleMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
+
+
+                        CameraPosition camPos = new CameraPosition.Builder()
+                                .target(new LatLng(latitude, longitude))
+                                .zoom(18)
+                                .bearing(arg0.getBearing())
+                                .tilt(70)
+                                .build();
+
+                        CameraUpdate camUpd3 =
+                                CameraUpdateFactory.newCameraPosition(camPos);
+
+                        mMap.animateCamera(camUpd3);
+                        //mMap.addMarker(new MarkerOptions().position(new LatLng(arg0.getLatitude(), arg0.getLongitude())).title("It's Me!"));
                     }
                 });
 
@@ -73,6 +108,6 @@ public class MapsActivity extends FragmentActivity {
      * This should only be called once and when we are sure that {@link #mMap} is not null.
      */
     private void setUpMap() {
-        mMap.addMarker(new MarkerOptions().position(new LatLng(0, 0)).title("Marker"));
+        //mMap.addMarker(new MarkerOptions().position(new LatLng(0, 0)).title("Marker"));
     }
 }
