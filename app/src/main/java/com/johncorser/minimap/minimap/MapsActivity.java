@@ -1,5 +1,6 @@
 package com.johncorser.minimap.minimap;
 
+import android.graphics.Color;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
@@ -8,13 +9,19 @@ import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.PolygonOptions;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class MapsActivity extends FragmentActivity {
 
     private GoogleMap mMap; // Might be null if Google Play services APK is not available.
-
+    private boolean moved = false;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -52,8 +59,6 @@ public class MapsActivity extends FragmentActivity {
             mMap.setMyLocationEnabled(true);
             // Check if we were successful in obtaining the map.
             if (mMap != null) {
-
-
                 mMap.setOnMyLocationChangeListener(new GoogleMap.OnMyLocationChangeListener() {
 
                     @Override
@@ -61,39 +66,85 @@ public class MapsActivity extends FragmentActivity {
                         // TODO Auto-generated method stub
                         // Getting latitude of the current location
 
-                        double latitude = arg0.getLatitude();
+                        //float delta = 0.1f;
+
+                        //List<LatLng> points = Arrays.asList(new LatLng(90, -180),
+
+//                                new LatLng(-90 + delta, -180 + delta),
+//
+ //                               new LatLng(-90 + delta, 0),
+//
+   //                             new LatLng(-90 + delta, 180 - delta),
+//
+ //                               new LatLng(0, 180 - delta),
+//
+  //                              new LatLng(90 - delta, 180 - delta),
+//
+  //                              new LatLng(90 - delta, 0),
+//
+  //                              new LatLng(90 - delta, -180 + delta),
+//
+  //                              new LatLng(0, -180 + delta));
 
 
-                        // Getting longitude of the current location
+                       // PolygonOptions options = new PolygonOptions();
 
-                        double longitude = arg0.getLongitude();
+                        //options.addAll(points);
 
+                        List<LatLng> testData = Arrays.asList(new LatLng(arg0.getLatitude(), arg0.getLongitude())
+                        //        new LatLng(arg0.getLatitude()+1, arg0.getLongitude()+1),
+                          //      new LatLng(arg0.getLatitude()+1, arg0.getLongitude()-1)
+                        );
 
-                        float speed = arg0.getSpeed();
-                        // Creating a LatLng object for the current location
+                        //for (LatLng location : testData) {
+                        ///    List<LatLng> visited = getCircle(location);
+                        //    options.addHole(visited);
+                        //}
+                        //options.fillColor(Color.rgb(0, 0, 0)); // 50% opacity red, for example
 
-                        LatLng latLng = new LatLng(latitude, longitude);
+                        //mMap.addPolygon(options);
 
+                        mMap.addMarker(new MarkerOptions().position(new LatLng(arg0.getLatitude(), arg0.getLongitude())).title("It's Me!"));
+                        CameraUpdate center =
+                                CameraUpdateFactory.newLatLng(new LatLng(arg0.getLatitude(), arg0.getLongitude()));
+                        CameraUpdate zoom = CameraUpdateFactory.zoomTo(15);
 
-                        //llamarservicio(latitude,longitude,speed);
+                        if (!moved) {
+                            mMap.moveCamera(center);
+                        }
+                        moved = true;
+                        mMap.animateCamera(zoom);
 
-                        // Showing the current location in Google Map
+                        if (mMap.getCameraPosition().zoom >= 15){
+                            LatLngBounds bounds = mMap.getProjection().getVisibleRegion().latLngBounds;
+                            for (double longBound = bounds.southwest.longitude; longBound < bounds.northeast.longitude; longBound += 0.01){
+                                for (double latBound = bounds.southwest.latitude; latBound < bounds.northeast.latitude; latBound += 0.01) {
+                                    double delta = 0.01;
+                                    boolean hasBeenVisited = false;
+                                    for (LatLng location : testData ){
+                                        if (location.latitude >= latBound && location.latitude <= latBound + delta && location.longitude >= longBound && location.longitude <= longBound + delta){
+                                            hasBeenVisited = true;
+                                            break;
+                                        }
+                                    }
+                                    if (!hasBeenVisited) {
+                                        List<LatLng> points = Arrays.asList(new LatLng(latBound, longBound),
 
-                        // googleMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
+                                                new LatLng(latBound, longBound + delta),
 
+                                                new LatLng(latBound + delta, longBound + delta),
 
-                        CameraPosition camPos = new CameraPosition.Builder()
-                                .target(new LatLng(latitude, longitude))
-                                .zoom(18)
-                                .bearing(arg0.getBearing())
-                                .tilt(70)
-                                .build();
+                                                new LatLng(latBound + delta, longBound)
+                                        );
+                                        PolygonOptions options = new PolygonOptions();
+                                        options.addAll(points);
+                                        options.fillColor(Color.rgb(0, 0, 0)); // 50% opacity red, for example
+                                        mMap.addPolygon(options);
+                                    }
+                                }
+                            }
+                        }
 
-                        CameraUpdate camUpd3 =
-                                CameraUpdateFactory.newCameraPosition(camPos);
-
-                        mMap.animateCamera(camUpd3);
-                        //mMap.addMarker(new MarkerOptions().position(new LatLng(arg0.getLatitude(), arg0.getLongitude())).title("It's Me!"));
                     }
                 });
 
@@ -110,4 +161,19 @@ public class MapsActivity extends FragmentActivity {
     private void setUpMap() {
         //mMap.addMarker(new MarkerOptions().position(new LatLng(0, 0)).title("Marker"));
     }
+    private ArrayList<LatLng> getCircle(LatLng location){
+        double lat = location.latitude;
+        double lon = location.longitude;
+        ArrayList<LatLng> visitedArea = new ArrayList<LatLng>();
+        for (double i=0; i<360; i+=4){
+
+            LatLng piece = new LatLng(lat + Math.sin(Math.toRadians(i)), lon + Math.cos(Math.toRadians(i)));
+            visitedArea.add(piece);
+        }
+        return visitedArea;
+    }
+    private void breakIntoSquares(){
+        LatLngBounds bounds = mMap.getProjection().getVisibleRegion().latLngBounds;
+    }
+
 }
