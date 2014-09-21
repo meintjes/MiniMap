@@ -5,3 +5,6 @@ To do:
 * yelp integration
 * yo integration
 * optimize loadtime
+* change favicon
+* disable zoom/pinching
+* get rid of road names under black layer
