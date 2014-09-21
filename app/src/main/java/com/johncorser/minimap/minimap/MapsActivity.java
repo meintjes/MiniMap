@@ -7,7 +7,6 @@ import android.graphics.Color;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
-import android.util.Log;
 
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -95,80 +94,90 @@ public class MapsActivity extends FragmentActivity {
 
             if (mMap != null) {
                 mMap.getUiSettings().setZoomControlsEnabled(false);
+                mMap.getUiSettings().setZoomGesturesEnabled(false);
+                mMap.getUiSettings().setTiltGesturesEnabled(false);
+                mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
 
-                mMap.setOnMyLocationChangeListener(new GoogleMap.OnMyLocationChangeListener() {
-
+                mMap.setOnMapLoadedCallback(new GoogleMap.OnMapLoadedCallback() {
                     @Override
-                    public void onMyLocationChange(Location arg0) {
+                    public void onMapLoaded() {
 
-                        CameraUpdate center =
-                                CameraUpdateFactory.newLatLng(new LatLng(arg0.getLatitude(), arg0.getLongitude()));
-                        CameraUpdate zoom = CameraUpdateFactory.zoomTo(16);
-                        if (!moved) {
-                            mMap.moveCamera(center);
-                        }
-                        moved = true;
-                        mMap.animateCamera(zoom);
+                        mMap.setOnMyLocationChangeListener(new GoogleMap.OnMyLocationChangeListener() {
 
-                        FeedReaderDbHelper mDbHelper = new FeedReaderDbHelper(getApplicationContext());
-                        SQLiteDatabase db = mDbHelper.getWritableDatabase();
-                        ContentValues values = new ContentValues();
-                        LatLng currentLocation = new LatLng(arg0.getLatitude(), arg0.getLongitude());
-                        List<LatLng> data = new ArrayList<LatLng>();
+                            @Override
+                            public void onMyLocationChange(Location arg0) {
 
-                        if (isFarAway(data, currentLocation)) {
-                            values.put(FeedReaderDbHelper.COLUMN_LATITUDE, arg0.getLatitude());
-                            values.put(FeedReaderDbHelper.COLUMN_LONGITUDE, arg0.getLongitude());
-                        }
+                                CameraUpdate center =
+                                        CameraUpdateFactory.newLatLng(new LatLng(arg0.getLatitude(), arg0.getLongitude()));
+                                CameraUpdate zoom = CameraUpdateFactory.zoomTo(16);
+                                if (!moved) {
+                                    mMap.moveCamera(center);
+                                }
+                                moved = true;
+                                mMap.animateCamera(zoom);
 
-                        long id = db.insert(FeedReaderDbHelper.TABLE_LOCATIONS, null, values);
+                                FeedReaderDbHelper mDbHelper = new FeedReaderDbHelper(getApplicationContext());
+                                SQLiteDatabase db = mDbHelper.getWritableDatabase();
+                                ContentValues values = new ContentValues();
+                                LatLng currentLocation = new LatLng(arg0.getLatitude(), arg0.getLongitude());
+                                List<LatLng> data = new ArrayList<LatLng>();
 
-                        Cursor cursor = db.rawQuery("select " + FeedReaderDbHelper.COLUMN_LATITUDE + "," + FeedReaderDbHelper.COLUMN_LONGITUDE + " from locations;",new String[]{});
-                        cursor.moveToFirst();
-                        while (!cursor.isAfterLast()) {
-                            data.add(new LatLng(cursor.getDouble(0), cursor.getDouble(1)));
-                            Log.e("HTN", data.toString());
-                            cursor.moveToNext();
-                        }
-                        // make sure to close the cursor
-                        cursor.close();
 
-                        if (mMap.getCameraPosition().zoom >= 15){
-                            List<List<LatLng>> holes = new ArrayList<List<LatLng>>();
-                            LatLngBounds bounds = mMap.getProjection().getVisibleRegion().latLngBounds;
-                            for (double longBound = Math.floor(bounds.southwest.longitude*1000)/1000; longBound < bounds.northeast.longitude; longBound += 0.001){
-                                for (double latBound = Math.floor(bounds.southwest.latitude*1000)/1000; latBound < bounds.northeast.latitude; latBound += 0.001) {
-                                    double squareSize = 0.001;
-                                    boolean hasBeenVisited = false;
-                                    for (LatLng location : data ){
-                                        if (location.latitude >= latBound && location.latitude <= latBound + squareSize && location.longitude >= longBound && location.longitude <= longBound + squareSize){
-                                            hasBeenVisited = true;
-                                            break;
+                                Cursor cursor = db.rawQuery("select " + FeedReaderDbHelper.COLUMN_LATITUDE + "," + FeedReaderDbHelper.COLUMN_LONGITUDE + " from locations;", new String[]{});
+                                cursor.moveToFirst();
+                                while (!cursor.isAfterLast()) {
+                                    data.add(new LatLng(cursor.getDouble(0), cursor.getDouble(1)));
+                                    //Log.e("HTN", data.toString());
+                                    cursor.moveToNext();
+                                }
+                                // make sure to close the cursor
+                                cursor.close();
+
+                                if (isFarAway(data, currentLocation)) {
+                                    values.put(FeedReaderDbHelper.COLUMN_LATITUDE, arg0.getLatitude());
+                                    values.put(FeedReaderDbHelper.COLUMN_LONGITUDE, arg0.getLongitude());
+                                    long id = db.insert(FeedReaderDbHelper.TABLE_LOCATIONS, null, values);
+
+                                }
+
+
+                                if (mMap.getCameraPosition().zoom >= 15) {
+                                    List<List<LatLng>> holes = new ArrayList<List<LatLng>>();
+                                    LatLngBounds bounds = mMap.getProjection().getVisibleRegion().latLngBounds;
+                                    for (double longBound = Math.floor(bounds.southwest.longitude * 1000) / 1000; longBound < bounds.northeast.longitude; longBound += 0.001) {
+                                        for (double latBound = Math.floor(bounds.southwest.latitude * 1000) / 1000; latBound < bounds.northeast.latitude; latBound += 0.001) {
+                                            double squareSize = 0.001;
+                                            boolean hasBeenVisited = false;
+                                            for (LatLng location : data) {
+                                                if (location.latitude >= latBound && location.latitude <= latBound + squareSize && location.longitude >= longBound && location.longitude <= longBound + squareSize) {
+                                                    hasBeenVisited = true;
+                                                    break;
+                                                }
+                                            }
+                                            if (hasBeenVisited) {
+                                                List<LatLng> visitedPoints = Arrays.asList(
+                                                        new LatLng(latBound + 0.000001, longBound + 0.000001),
+
+                                                        new LatLng(latBound + 0.000001, longBound + squareSize),
+
+                                                        new LatLng(latBound + squareSize, longBound + squareSize),
+
+                                                        new LatLng(latBound + squareSize, longBound + 0.000001)
+                                                );
+                                                holes.add(visitedPoints);
+
+                                            }
                                         }
                                     }
-                                    if (hasBeenVisited) {
-                                        List <LatLng> visitedPoints = Arrays.asList(
-                                            new LatLng(latBound + 0.000001, longBound + 0.000001),
+                                    worldOverlay.setHoles(holes);
 
-                                                    new LatLng(latBound + 0.000001 , longBound + squareSize),
-
-                                                    new LatLng(latBound + squareSize, longBound + squareSize),
-
-                                                    new LatLng(latBound + squareSize, longBound + 0.000001)
-                                        );
-                                        holes.add(visitedPoints);
-
-                                    }
                                 }
+
+
                             }
-                            worldOverlay.setHoles(holes);
-
-                        }
-
-
+                        });
                     }
                 });
-
             }
         }
     }
