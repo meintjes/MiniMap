@@ -1,5 +1,6 @@
 package com.johncorser.minimap.minimap;
 
+import android.app.ActionBar;
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -7,6 +8,7 @@ import android.graphics.Color;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
+import android.widget.SeekBar;
 
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -26,6 +28,7 @@ public class MapsActivity extends FragmentActivity {
 
     private GoogleMap mMap; // Might be null if Google Play services APK is not available.
     private boolean moved = false;
+    private final int MIN_ZOOM = 14;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -64,26 +67,16 @@ public class MapsActivity extends FragmentActivity {
             mMap.setMyLocationEnabled(true);
             // Check if we were successful in obtaining the map.
 
-            float delta = 0.1f;
-
+            double delta = 0.1;
             List<LatLng> points = Arrays.asList(new LatLng(90, -180),
-
                     new LatLng(-90 + delta, -180 + delta),
-
                     new LatLng(-90 + delta, 0),
-
                     new LatLng(-90 + delta, 180 - delta),
-
                     new LatLng(0, 180 - delta),
-
                     new LatLng(90 - delta, 180 - delta),
-
                     new LatLng(90 - delta, 0),
-
                     new LatLng(90 - delta, -180 + delta),
-
                     new LatLng(0, -180 + delta));
-
 
             PolygonOptions options = new PolygonOptions();
 
@@ -98,6 +91,24 @@ public class MapsActivity extends FragmentActivity {
                 mMap.getUiSettings().setTiltGesturesEnabled(false);
                 mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
 
+                SeekBar zoomBar = (SeekBar) findViewById(R.id.zoomBar);
+                zoomBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                    @Override
+                    public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                        mMap.animateCamera(CameraUpdateFactory.zoomTo(MIN_ZOOM + progress));
+                    }
+
+                    @Override
+                    public void onStartTrackingTouch(SeekBar seekBar) {
+                        // TODO Auto-generated method stub
+                    }
+
+                    @Override
+                    public void onStopTrackingTouch(SeekBar seekBar) {
+                        // TODO Auto-generated method stub
+                    }
+                });
+
                 mMap.setOnMapLoadedCallback(new GoogleMap.OnMapLoadedCallback() {
                     @Override
                     public void onMapLoaded() {
@@ -107,14 +118,12 @@ public class MapsActivity extends FragmentActivity {
                             @Override
                             public void onMyLocationChange(Location arg0) {
 
-                                CameraUpdate center =
-                                        CameraUpdateFactory.newLatLng(new LatLng(arg0.getLatitude(), arg0.getLongitude()));
-                                CameraUpdate zoom = CameraUpdateFactory.zoomTo(16);
                                 if (!moved) {
+                                    CameraUpdate center =
+                                            CameraUpdateFactory.newLatLngZoom(new LatLng(arg0.getLatitude(), arg0.getLongitude()), 16);
                                     mMap.moveCamera(center);
                                 }
                                 moved = true;
-                                mMap.animateCamera(zoom);
 
                                 FeedReaderDbHelper mDbHelper = new FeedReaderDbHelper(getApplicationContext());
                                 SQLiteDatabase db = mDbHelper.getWritableDatabase();
@@ -141,7 +150,7 @@ public class MapsActivity extends FragmentActivity {
                                 }
 
 
-                                if (mMap.getCameraPosition().zoom >= 15) {
+                                if (mMap.getCameraPosition().zoom >= MIN_ZOOM) {
                                     List<List<LatLng>> holes = new ArrayList<List<LatLng>>();
                                     LatLngBounds bounds = mMap.getProjection().getVisibleRegion().latLngBounds;
                                     for (double longBound = Math.floor(bounds.southwest.longitude * 1000) / 1000; longBound < bounds.northeast.longitude; longBound += 0.001) {
@@ -157,11 +166,8 @@ public class MapsActivity extends FragmentActivity {
                                             if (hasBeenVisited) {
                                                 List<LatLng> visitedPoints = Arrays.asList(
                                                         new LatLng(latBound + 0.000001, longBound + 0.000001),
-
                                                         new LatLng(latBound + 0.000001, longBound + squareSize),
-
                                                         new LatLng(latBound + squareSize, longBound + squareSize),
-
                                                         new LatLng(latBound + squareSize, longBound + 0.000001)
                                                 );
                                                 holes.add(visitedPoints);
