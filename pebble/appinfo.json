@@ -1,0 +1,18 @@
+{
+  "uuid": "43529331-7f69-4046-8a5d-e3648596a3e7",
+  "shortName": "Minimap",
+  "longName": "Minimap",
+  "capabilities": ["location"],
+  "companyName": "MakeAwesomeHappen",
+  "versionCode": 1,
+  "versionLabel": "1.0",
+  "watchapp": {
+    "watchface": false
+  },
+  "appKeys": {
+    "DATA_MAP_BITMAPS": 0
+  },
+  "resources": {
+    "media": []
+  }
+}
